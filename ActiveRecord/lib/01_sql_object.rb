@@ -11,7 +11,7 @@ class SQLObject
       SELECT
         *
       FROM
-        "#{table_name}"
+        #{table_name}
       SQL
     @columns = table.first.map(&:to_sym)
   end
@@ -61,22 +61,42 @@ class SQLObject
   end
 
   def self.all
-    tables = DBConnection.execute(<<-SQL, arg1, arg2, ...)
+    tables = DBConnection.execute(<<-SQL)
+    SELECT 
+      *
+    FROM 
+      #{table_name}
     SQL
+    # debugger
+    parse_all(tables)
   end 
 
   def self.parse_all(results)
-    # ...
+    results.map do |hash|
+      self.new(hash)
+    end 
   end
 
   def self.find(id)
-    # ...
+    table = DBConnection.execute(<<-SQL, id)
+    SELECT 
+      *
+    FROM
+      #{table_name}
+    WHERE 
+      id = ?
+    LIMIT 
+      1
+    SQL
+    
+    parse_all(table).first
+    # debugger
   end
 
   def initialize(params = {})
     params.each do |key, value|
       
-      if self.class.columns.include?(key)
+      if self.class.columns.include?(key.to_sym)
         self.send("#{key}=", value)
       else 
         raise "unknown attribute '#{key.to_s}'"
@@ -89,12 +109,21 @@ class SQLObject
   end
 
   def attribute_values
-    # attributes 
-    # @attributes.values 
+    attributes.map {|k,v| v}
   end
 
   def insert
-    # ...
+    # debugger
+    question_marks = ['?'] * attributes.length
+    col_names = attributes.keys.join(',')
+    # debugger
+    DBConnection.execute(<<-SQL, *attribute_values)
+    INSERT INTO 
+    #{table_name} (col_names)
+    VALUES 
+    question_marks
+    SQL
+    # last_insert_row_id
   end
 
   def update
