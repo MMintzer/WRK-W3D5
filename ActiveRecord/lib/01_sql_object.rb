@@ -19,12 +19,11 @@ class SQLObject
   def self.finalize!
     columns.each do |col|
       define_method("#{col}") do 
-        @attributes[col]
+        attributes[col]
       end  
       
       define_method("#{col}=") do |arg| 
-        attributes
-        @attributes[col] = arg 
+        attributes[col] = arg 
       end 
     end 
   end
@@ -62,8 +61,9 @@ class SQLObject
   end
 
   def self.all
-    # ...
-  end
+    tables = DBConnection.execute(<<-SQL, arg1, arg2, ...)
+    SQL
+  end 
 
   def self.parse_all(results)
     # ...
@@ -74,13 +74,14 @@ class SQLObject
   end
 
   def initialize(params = {})
-    finalize!
-    # keys = params.keys
-    # keys.map(&:to_sym)
-    # keys.each do |key|
-    #   raise "unknown attribute #{key}" unless self.columns.include?(key)
-    # end 
-    # self.send(:initialize, params)
+    params.each do |key, value|
+      
+      if self.class.columns.include?(key)
+        self.send("#{key}=", value)
+      else 
+        raise "unknown attribute '#{key.to_s}'"
+      end 
+    end 
   end
 
   def attributes
